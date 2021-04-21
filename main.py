@@ -211,15 +211,17 @@ class Shape:
 
     def fall(self):
         """Moves this shape one box-length down."""
-        if not self.can_move_shape(0, 1):
-            return False
-        else:
-            for box in self.boxes:
-                self.canvas.move(box, 0 * Shape.BOX_SIZE, 1 * Shape.BOX_SIZE)
-                relative_position = self.canvas.coords(box)[1]
-                if relative_position > 575:
-                    return False
-            return True
+        # if not self.can_move_shape(0, 1):
+        #     return False
+        # else:
+
+        # make a collision check
+        for box in self.boxes:
+            self.canvas.move(box, 0 * Shape.BOX_SIZE, 1 * Shape.BOX_SIZE)
+            relative_position = self.canvas.coords(box)[1]
+            if relative_position > 575:
+                return False
+        return True
 
     def can_move_box(self, box, x_value, y_value):
         """Check if box can move (x, y) boxes."""
