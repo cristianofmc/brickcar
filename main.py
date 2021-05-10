@@ -58,7 +58,7 @@ class Game:
         )
         self.canvas.grid(column=0, row=1, columnspan=3, sticky="NSEW", padx=2)
 
-        self.main_car = Shape(self.canvas, 50, 'car', 25 * 20)
+        self.main_car = Shape(self.canvas, 50, 'car', 25 * 20, True, True)
         self.cars = []
         self.bars = []
         self.side_zero = []
@@ -91,8 +91,8 @@ class Game:
 
     def timer_bars(self):
         if self.bars_counter == 0:
-            self.bars.append(Shape(self.canvas, 0, 'bar'))
-            self.bars.append(Shape(self.canvas, 225, 'bar'))
+            self.bars.append(Shape(self.canvas, 0, 'bar', 0, False, False))
+            self.bars.append(Shape(self.canvas, 225, 'bar', False, False))
             self.bars_counter = 5
 
         self.bars_counter -= 1
@@ -111,7 +111,7 @@ class Game:
     def timer_cars(self):
 
         if self.cars_counter == 0:
-            self.cars.append(Shape(self.canvas, self.next_point, 'car'))
+            self.cars.append(Shape(self.canvas, self.next_point, 'car', 0, False, True))
 
             # AI code
             if self.next_point == 50:
@@ -133,10 +133,12 @@ class Game:
         for shape in self.cars:
             if not shape.fall():
                 to_delete = self.cars.index(shape)
+                shape.del_shape()
 
         # delete shapes out of canvas
         if to_delete != '':
             del self.cars[to_delete]
+
             self.score_int += self.level_int * 100
             self.set_score_label()
             self.set_level()
@@ -162,7 +164,7 @@ class Game:
     def fill_bar(self):
         for side_bar in (0, 225):
             for x in range(1, 5):
-                self.bars.append(Shape(self.canvas, side_bar, 'bar', x * 25 * 5))
+                self.bars.append(Shape(self.canvas, side_bar, 'bar', x * 25 * 5, False, False))
 
     def handle_events(self, event):
         """Handle all user events."""
@@ -170,6 +172,8 @@ class Game:
             self.main_car.move(-3, 0)
         if event.keysym == "Right":
             self.main_car.move(3, 0)
+
+    # def car_crash_animation(self):
 
 
 class Shape:
@@ -184,11 +188,13 @@ class Shape:
         'bar': ((0, 1), (0, 2), (0, 3))
     }
 
-    def __init__(self, canvas, side, shape_name, y_adicional=0):
+    def __init__(self, canvas, side, shape_name, y_adicional=0, overrun_check=False, collision_check=False):
         side = Shape.START_POINT[shape_name].index(side)
         self.boxes = []  # the squares drawn by canvas.create_rectangle()
         self.point = Shape.START_POINT[shape_name][side]
         self.canvas = canvas
+        self.overrun_check = overrun_check
+        self.collision_check = collision_check
 
         Shape.BOX_SIZE = 25
         for point in Shape.SHAPES[shape_name]:
@@ -199,6 +205,10 @@ class Shape:
                 point[1] * Shape.BOX_SIZE + Shape.BOX_SIZE - (4 * Shape.BOX_SIZE) + y_adicional,
                 fill=FIRST_COLOR, outline=SECOND_COLOR)
             self.boxes.append(box)
+
+    def del_shape(self):
+        for box in self.boxes:
+            self.canvas.delete(box)
 
     def move(self, x, y):
         """Moves this shape (x, y) boxes."""
@@ -211,47 +221,54 @@ class Shape:
 
     def fall(self):
         """Moves this shape one box-length down."""
-        # if not self.can_move_shape(0, 1):
-        #     return False
-        # else:
-
-        # make a collision check
-        for box in self.boxes:
-            self.canvas.move(box, 0 * Shape.BOX_SIZE, 1 * Shape.BOX_SIZE)
-            relative_position = self.canvas.coords(box)[1]
-            if relative_position > 575:
-                return False
+        if not self.can_move_shape(0, 1):
+            return False
+        else:
+            # make a collision check
+            for box in self.boxes:
+                self.canvas.move(box, 0 * Shape.BOX_SIZE, 1 * Shape.BOX_SIZE)
+                relative_position = self.canvas.coords(box)[1]
+                if relative_position > 575:
+                    return False
         return True
 
     def can_move_box(self, box, x_value, y_value):
         """Check if box can move (x, y) boxes."""
+        # compare getted x value and
         x = x_value - 1
-        y = y_value
+        y = y_value 
+
         for i in range(2):
             x = x * Shape.BOX_SIZE
             y = y * Shape.BOX_SIZE
             cords = self.canvas.coords(box)
 
-            # Returns False if moving the box would overrun the screen
-            if cords[3] + y > Game.HEIGHT:
-                return False
-            if cords[0] + x < 0:
-                return False
-            if cords[2] + x > Game.WIDTH:
-                return False
+            if self.overrun_check:
+                if cords[0] + x < 0:
+                    print("false 2")
+                    return False
+                if cords[2] + x > Game.WIDTH:
+                    print("false 3")
+                    return False
 
-            # Returns False if moving box (x, y) would overlap another box
-            overlap = set(self.canvas.find_overlapping(
-                (cords[0] + cords[2]) / 2 + x,
-                (cords[1] + cords[3]) / 2 + y,
-                (cords[0] + cords[2]) / 2 + x,
-                (cords[1] + cords[3]) / 2 + y
-            ))
-            other_items = set(self.canvas.find_all()) - set(self.boxes)
+            # change x value for the default a y for y + 1
             x = x_value
-            if overlap & other_items:
-                return False
+            y += Shape.BOX_SIZE
 
+            if self.collision_check:
+                # Returns False if moving box (x, y) would overlap another box
+                overlap = set(self.canvas.find_overlapping(
+                    (cords[0] + cords[2]) / 2 + x,
+                    (cords[1] + cords[3]) / 2 + y,
+                    (cords[0] + cords[2]) / 2 + x,
+                    (cords[1] + cords[3]) / 2 + y
+                ))
+
+                other_items = set(self.canvas.find_all()) - set(self.boxes)
+                if overlap & other_items:
+                    print(overlap & other_items)
+                    print('crashed')
+                    return False
         return True
 
     def can_move_shape(self, x, y):
