@@ -16,8 +16,8 @@ class Game:
     def start(self):
         self.level_int = 1
         self.score_int = 0
-        self.cars_speed = [600, 500, 400, 250, 150, 125, 100, 75, 50]
-        self.bars_speed = [800, 700, 600, 450, 350, 250, 200, 100, 75]
+        self.cars_speed = [550, 450, 300, 250, 150, 125, 100, 75, 50]
+        self.bars_speed = [750, 650, 500, 450, 350, 250, 200, 100, 75]
         self.cars_counter = 0
         self.bars_counter = 0
         self.last_point = 50
@@ -123,8 +123,10 @@ class Game:
 
                 self.next_point = choice((50, 125))
 
+                # this defines the spacing between the cars
                 if self.next_point == self.last_point:
                     self.cars_counter = randint(4, 10)
+
                 else:
                     self.last_point = self.next_point
                     self.cars_counter = 10
@@ -134,15 +136,17 @@ class Game:
             to_delete = ''
             for shape in self.cars:
                 if not shape.fall():
+                    print(self.cars.index(shape))
                     if shape.crashed:
                         self.running = False
+                        self.collision_color()
                         return False
                     to_delete = self.cars.index(shape)
+                    # delete shapes on canvas
+                    self.cars[to_delete].del_shape()
 
             # delete shapes out of canvas
             if to_delete != '':
-                # delete shapes on canvas
-                self.cars[to_delete].del_shape()
 
                 # delete shape on car list
                 del self.cars[to_delete]
@@ -150,7 +154,11 @@ class Game:
                 self.score_int += self.level_int * 100
                 self.set_score_label()
                 self.set_level()
-                print(self.level_int, self.score_int, self.score_to_level_up[0], self.cars_speed[0], self.bars_speed[0])
+                print(f'Level {self.level_int}, '
+                      f'Score { self.score_int}, '
+                      f'Score to uplevel {self.score_to_level_up[0]}, '
+                      f'Car Speed {self.cars_speed[0]}, '
+                      f'Side bars Speed {self.bars_speed[0]}')
 
             if len(self.side_zero):
                 for i in range(len(self.side_zero)):
@@ -169,8 +177,8 @@ class Game:
 
             if self.main_car.crashed:
                 self.running = False
-
-            # print(self.side_zero, self.side_one)
+                return False
+            #print(self.side_zero, self.side_one)
             self.root.after(self.cars_speed[0], self.timer_cars)
 
     def fill_bar(self):
@@ -188,6 +196,7 @@ class Game:
                 result = self.main_car.move(3, 0)
             if not result and self.main_car.crashed:
                 self.running = False
+                self.collision_color()
 
     def collision_color(self):
         self.main_car.change_color('#dc3545')
@@ -234,7 +243,8 @@ class Shape:
 
     def change_color(self, color):
         for box in self.boxes:
-            self.canvas.itemconfig(box, fill=color)
+            if self.canvas.itemcget(box, "fill") == FIRST_COLOR:
+                self.canvas.itemconfig(box, fill=color)
 
     def del_shape(self):
         for box in self.boxes:
@@ -253,7 +263,7 @@ class Shape:
         """Moves this shape one box-length down."""
         if not self.can_move_shape(0, 1):
             return False
-        else:
+        elif not self.crashed:
             # make a collision check
             for box in self.boxes:
                 self.canvas.move(box, 0 * Shape.BOX_SIZE, 1 * Shape.BOX_SIZE)
@@ -269,11 +279,11 @@ class Shape:
         cords = self.canvas.coords(box)
 
         if self.overrun_check:
-            if cords[0] + x < 0:
-                print("false 2")
+            if cords[3] + y > Game.HEIGHT:
                 return False
-            if cords[2] + x > Game.WIDTH:
-                print("false 3")
+            if cords[0] + x < 0:
+                return False
+            if cords[2] + x >= Game.WIDTH:
                 return False
 
         if self.collision_check:
@@ -287,9 +297,7 @@ class Shape:
 
             other_items = set(self.canvas.find_all()) - set(self.boxes)
             if overlap & other_items:
-                print(overlap & other_items)
-                print(self.boxes)
-                print(f'crashed {y_value, x_value} => {y, x}')
+                print(f'crashed')
                 self.crashed = True
                 return False
         return True
