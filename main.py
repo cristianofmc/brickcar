@@ -1,12 +1,13 @@
 from tkinter import Canvas, Button, Label, Tk, StringVar
 from windows import set_dpi_awareness
 from random import choice, randint
+from ai import Ai
 
+# code for windows appearance
 set_dpi_awareness()
 
 FIRST_COLOR = 'black'
 SECOND_COLOR = '#d9d9d9'
-LEFT = 50
 
 
 class Game:
@@ -14,17 +15,29 @@ class Game:
     HEIGHT = 500
 
     def start(self):
+        # level and score variables
         self.level_int = 1
         self.score_int = 0
-        self.cars_speed = [550, 450, 300, 250, 150, 125, 100, 75, 50]
-        self.bars_speed = [750, 650, 500, 450, 350, 250, 200, 100, 75]
         self.cars_counter = 0
         self.bars_counter = 0
+        self.max_score_size = 6
+        self.score_to_level_up = [5000, 15000, 36000, 57000, 78000, 99000, 200000, 500000]
+
+        # variables to position of next cars
         self.last_point = 50
         self.next_point = 50
-        self.score_to_level_up = [5000, 15000, 36000, 57000, 78000, 99000, 200000, 500000]
-        self.running = True
 
+        # speeds lists
+        self.cars_speed = [550, 450, 300, 250, 150, 125, 100, 75, 50]
+        self.bars_speed = [750, 650, 500, 450, 350, 250, 200, 100, 75]
+
+        self.running = True
+        self.ai_is_activated = False
+
+        # all the possible actions
+        self.action_dict = {0: "Left", 1: 'Right'}
+
+        # block code to create root
         self.root = Tk()
         self.root.resizable(False, False)
         self.root.configure(bg=SECOND_COLOR)
@@ -44,13 +57,14 @@ class Game:
                                  font=("Helvetica", 10, "bold"), bg=SECOND_COLOR)
         # create button for AI
         self.AI_button = Button(self.root, text='AI', highlightbackground="#bce8f1", highlightcolor="#bce8f1",
-                                highlightthickness=1)
+                                highlightthickness=1, command=self.activate_ai)
 
         # create status bar in the window
         self.level_label.grid(row=0, column=0, pady=5, padx=10, sticky='EW')
         self.score_label.grid(row=0, column=1, pady=5, padx=10, sticky='EW')
         self.AI_button.grid(row=0, column=2, pady=5, padx=10, sticky='EW')
 
+        # create canvas
         self.canvas = Canvas(
             self.root,
             width=Game.WIDTH,
@@ -59,11 +73,13 @@ class Game:
         )
         self.canvas.grid(column=0, row=1, columnspan=3, sticky="NSEW", padx=2)
 
+        # The main car is the car that you control
         self.main_car = Shape(self.canvas, 50, 'car', 25 * 20, True, True)
+
+        # list with all cars and all bars
         self.cars = []
         self.bars = []
-        self.side_zero = []
-        self.side_one = []
+
         self.root.bind("<Key>", self.handle_events)
         self.fill_bar()
         self.timer_bars()
@@ -71,10 +87,57 @@ class Game:
 
         self.root.mainloop()
 
+    def activate_ai(self):
+        # class to activate the ai status.
+        # this changes the style of the button
+
+        self.ai_is_activated = not self.ai_is_activated
+        if self.ai_is_activated:
+            self.AI_button.configure(fg='blue')
+        else:
+            self.AI_button.configure(fg='black')
+
+    def ai_execution(self):
+        # code for Ai call and execution
+        if self.ai_is_activated:
+            distance = self.get_cars_distance()
+            new_ai = Ai()
+            new_ai.set_rewards(distance[0], distance[1])
+            # print(distance[0], distance[1])
+            new_ai.training()
+            self.action_taking(self.action_dict[new_ai.get_shortest_path(0, 0)[1][1]])
+
+    def get_cars_distance(self):
+        # this will calculate the distance between the last two cars on each way
+        # function inter to reduce value
+        def calc_distance(x1, y1, x2, y2):
+            return ((x2 - x1) ** 2 + (y2 - y1) ** 2) ** 0.5
+
+        # code to get the two cars closest to each road
+        coordinates = self.main_car.get_coordinates()
+        coordinates[0] = coordinates[0] / 3 - 1
+        # coordinates[1] += 1
+
+        max_right = -5
+        max_left = -5
+        for car in self.cars:
+            current_xy = car.get_coordinates()
+            if current_xy[0] / 3 - 1 == 0 and max_left <= current_xy[1]:
+                max_left = car.get_coordinates()[1]
+            elif current_xy[0] / 3 - 1 == 1 and max_right <= current_xy[1]:
+                max_right = car.get_coordinates()[1]
+
+        distance_next_right = calc_distance(coordinates[0], coordinates[1], 0, max_right)
+        distance_next_left = calc_distance(coordinates[0], coordinates[1], 1, max_left)
+
+        return distance_next_left, distance_next_right
+
     def set_score_label(self):
+        # update the score on screen
         self.score.set(f"Score: {self.score_int}")
 
     def set_level(self):
+        # update the level
         if self.score_int >= self.score_to_level_up[0]:
 
             if len(self.score_to_level_up) > 1:
@@ -88,9 +151,11 @@ class Game:
             self.set_level_label()
 
     def set_level_label(self):
+        # update the level on screen
         self.level.set(f"Level: {self.level_int}")
 
     def timer_bars(self):
+        # timer for bars
         if self.running:
             if self.bars_counter == 0:
                 self.bars.append(Shape(self.canvas, 0, 'bar', 0, False, False))
@@ -111,16 +176,13 @@ class Game:
             self.root.after(self.bars_speed[0], self.timer_bars)
 
     def timer_cars(self):
+        # timer execution for cars
+
         if self.running:
+
+            # code to create new car
             if self.cars_counter == 0:
                 self.cars.append(Shape(self.canvas, self.next_point, 'car', 0, False, True))
-
-                # AI code
-                if self.next_point == 50:
-                    self.side_zero.append(0)
-                else:
-                    self.side_one.append(0)
-
                 self.next_point = choice((50, 125))
 
                 # this defines the spacing between the cars
@@ -136,7 +198,6 @@ class Game:
             to_delete = ''
             for shape in self.cars:
                 if not shape.fall():
-                    print(self.cars.index(shape))
                     if shape.crashed:
                         self.running = False
                         self.collision_color()
@@ -147,58 +208,63 @@ class Game:
 
             # delete shapes out of canvas
             if to_delete != '':
-
                 # delete shape on car list
                 del self.cars[to_delete]
 
                 self.score_int += self.level_int * 100
                 self.set_score_label()
                 self.set_level()
-                print(f'Level {self.level_int}, '
-                      f'Score { self.score_int}, '
-                      f'Score to uplevel {self.score_to_level_up[0]}, '
-                      f'Car Speed {self.cars_speed[0]}, '
-                      f'Side bars Speed {self.bars_speed[0]}')
 
-            if len(self.side_zero):
-                for i in range(len(self.side_zero)):
-                    self.side_zero[i] += 1
-                if self.side_zero[0] > 22:
-                    del self.side_zero[0]
+                # print(f'Level {self.level_int}, '
+                #       f'Score {self.score_int}, '
+                #       f'Score to update level {self.score_to_level_up[0]}, '
+                #       f'Car Speed {self.cars_speed[0]}, '
+                #       f'Side bars Speed {self.bars_speed[0]}')
 
-            if len(self.side_one):
-                for i in range(len(self.side_one)):
-                    self.side_one[i] += 1
-                if self.side_one[0] > 22:
-                    del self.side_one[0]
+            # call the Ai method
+            self.ai_execution()
 
-            self.score_int += 1
-            self.set_score_label()
+            # increment the score
+            if len(str(self.score_int)) >= self.max_score_size:
+                self.score_int += 1
+                self.set_score_label()
 
+            # this checks if the car has crashed
             if self.main_car.crashed:
                 self.running = False
                 return False
-            #print(self.side_zero, self.side_one)
+
             self.root.after(self.cars_speed[0], self.timer_cars)
 
     def fill_bar(self):
+        # fill the bars on the screen
         for side_bar in (0, 225):
             for x in range(1, 5):
                 self.bars.append(Shape(self.canvas, side_bar, 'bar', x * 25 * 5, False, False))
 
     def handle_events(self, event):
-        """Handle all user events."""
+        # this gets the keys pressed by the player on keyboard and calls the actions
+        if event.keysym == "Left" or event.keysym == "Right":
+            self.action_taking(event.keysym)
+
+    def action_taking(self, action):
+        # actions to move car
+        temp_side = 0
         if self.running:
             result = True
-            if event.keysym == "Left":
+            if action == "Left":
                 result = self.main_car.move(-3, 0)
-            if event.keysym == "Right":
+                temp_side = 0
+            if action == "Right":
                 result = self.main_car.move(3, 0)
+                temp_side = 1
             if not result and self.main_car.crashed:
                 self.running = False
                 self.collision_color()
+            self.main_car_side = temp_side
 
     def collision_color(self):
+        # this will change the color of the car when the main car has crashed
         self.main_car.change_color('#dc3545')
 
 
@@ -214,7 +280,7 @@ class Shape:
         'bar': ((0, 1), (0, 2), (0, 3))
     }
 
-    def __init__(self, canvas, side, shape_name, y_adicional=0, overrun_check=False, collision_check=False):
+    def __init__(self, canvas, side, shape_name, y_additional=0, overrun_check=False, collision_check=False):
         global FIRST_COLOR, SECOND_COLOR
 
         aux_color = FIRST_COLOR
@@ -235,23 +301,26 @@ class Shape:
 
             box = canvas.create_rectangle(
                 point[0] * Shape.BOX_SIZE + self.point,
-                point[1] * Shape.BOX_SIZE - (4 * Shape.BOX_SIZE) + y_adicional,
+                point[1] * Shape.BOX_SIZE - (4 * Shape.BOX_SIZE) + y_additional,
                 point[0] * Shape.BOX_SIZE + Shape.BOX_SIZE + self.point,
-                point[1] * Shape.BOX_SIZE + Shape.BOX_SIZE - (4 * Shape.BOX_SIZE) + y_adicional,
+                point[1] * Shape.BOX_SIZE + Shape.BOX_SIZE - (4 * Shape.BOX_SIZE) + y_additional,
                 fill=FIRST_COLOR, outline=SECOND_COLOR)
             self.boxes.append(box)
 
     def change_color(self, color):
+        # method to change color of the shape
         for box in self.boxes:
             if self.canvas.itemcget(box, "fill") == FIRST_COLOR:
                 self.canvas.itemconfig(box, fill=color)
 
     def del_shape(self):
+        # method to delete the box
+
         for box in self.boxes:
             self.canvas.delete(box)
 
     def move(self, x, y):
-        """Moves this shape (x, y) boxes."""
+        # move the box
         if not self.can_move_shape(x, y):
             return False
         elif not self.crashed:
@@ -259,8 +328,21 @@ class Shape:
                 self.canvas.move(box, x * Shape.BOX_SIZE, y * Shape.BOX_SIZE)
             return True
 
+    def get_coordinates(self, number_box=3):
+        # method that return the coordinates of and shape
+        # number_box is the shape reference block
+
+        box_list = []
+        for box in self.boxes:
+            current_box = self.canvas.coords(box)
+            current_list = []
+            for item in range(2):
+                current_list.append(current_box[item] / self.BOX_SIZE)
+            box_list.append(current_list)
+        return box_list[number_box]
+
     def fall(self):
-        """Moves this shape one box-length down."""
+        # Moves this shape one box-length down.
         if not self.can_move_shape(0, 1):
             return False
         elif not self.crashed:
@@ -273,7 +355,7 @@ class Shape:
         return True
 
     def can_move_box(self, box, x, y):
-        """Check if box can move (x, y) boxes."""
+        # Check if box can move (x, y) boxes.
         x = x * Shape.BOX_SIZE
         y = y * Shape.BOX_SIZE
         cords = self.canvas.coords(box)
@@ -303,7 +385,7 @@ class Shape:
         return True
 
     def can_move_shape(self, x, y):
-        """Check if the shape can move (x, y) boxes."""
+        # Check if the shape can move (x, y) boxes.
         for box in self.boxes:
             if not self.can_move_box(box, x, y):
                 return False
