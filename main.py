@@ -2,6 +2,7 @@ from tkinter import Canvas, Button, Label, Tk, StringVar
 from windows import set_dpi_awareness
 from random import choice, randint
 from ai import Ai
+from datetime import datetime
 
 # code for windows appearance
 set_dpi_awareness()
@@ -28,8 +29,8 @@ class Game:
         self.last_point = self.next_point
 
         # speeds lists
-        self.cars_speed = [550, 450, 300, 250, 150, 125, 100, 75, 50]
-        self.bars_speed = [750, 650, 500, 450, 350, 250, 200, 100, 75]
+        self.cars_speed = [400, 300, 250, 200, 150, 100, 75, 50, 20]
+        self.bars_speed = [550, 450, 400, 350, 300, 250, 225, 200, 150]
 
         # all the possible actions
         self.action_dict = {0: "Left", 1: 'Right'}
@@ -96,6 +97,7 @@ class Game:
 
         # start the game
         print("Start")
+        print(datetime.now().strftime("%H:%M:%S"))
         self.root.mainloop()
 
     def activate_ai(self):
@@ -154,6 +156,7 @@ class Game:
 
             if self.level_int < 9:
                 self.level_int += 1
+                print(datetime.now().strftime("%H:%M:%S"))
                 if len(self.cars_speed) > 1 and len(self.bars_speed) > 1:
                     del self.cars_speed[0]
                     del self.bars_speed[0]
@@ -223,16 +226,16 @@ class Game:
             if to_delete != '':
                 # delete shape on car list
                 del self.cars[to_delete]
-
-                self.score_int += self.level_int * 100
-                self.set_score_label()
-                self.set_level()
+                if len(str(self.score_int + self.level_int * 100)) <= self.max_score_size:
+                    self.score_int += self.level_int * 100
+                    self.set_score_label()
+                    self.set_level()
 
             # call the Ai method
             self.ai_execution()
 
             # increment the score
-            if len(str(self.score_int)) <= self.max_score_size:
+            if len(str(self.score_int + 1)) <= self.max_score_size:
                 self.score_int += 1
                 self.set_score_label()
 
