@@ -2,7 +2,6 @@ from tkinter import Canvas, Button, Label, Tk, StringVar
 from windows import set_dpi_awareness
 from random import choice, randint
 from ai import Ai
-from datetime import datetime
 
 # code for windows appearance
 set_dpi_awareness()
@@ -97,7 +96,6 @@ class Game:
 
         # start the game
         print("Start")
-        print(datetime.now().strftime("%H:%M:%S"))
         self.root.mainloop()
 
     def activate_ai(self):
@@ -156,7 +154,7 @@ class Game:
 
             if self.level_int < 9:
                 self.level_int += 1
-                print(datetime.now().strftime("%H:%M:%S"))
+
                 if len(self.cars_speed) > 1 and len(self.bars_speed) > 1:
                     del self.cars_speed[0]
                     del self.bars_speed[0]
