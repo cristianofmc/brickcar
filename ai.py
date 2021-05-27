@@ -25,6 +25,8 @@ class Ai:
         # function that set the values for rewards matrix to hold the rewards for each state.
         self.rewards[0][0] = left
         self.rewards[0][1] = right
+        self.rewards[1][0] = left
+        self.rewards[1][1] = right
 
     def set_starting_location(self):
         # choose a random point to start the episode
@@ -66,7 +68,7 @@ class Ai:
         shortest_path.append([current_row_index, current_column_index])
         return shortest_path
 
-    def training(self, log=False):
+    def training(self):
 
         # run in 1000 episodes
         for episode in range(1000):
@@ -83,7 +85,6 @@ class Ai:
 
             # receive the reward for moving to the new state, and calculate the temporal difference
             reward = self.rewards[row_index, column_index]
-            # print(old_row_index, old_column_index, action_index)
             old_q_value = self.q_values[old_row_index, old_column_index, action_index]
             temporal_difference = reward + (self.discount_factor * np.max(self.q_values[row_index,
                                                                                         column_index])) - old_q_value
@@ -91,14 +92,3 @@ class Ai:
             # update the Q-value for the previous state and action pair
             new_q_value = old_q_value + (self.learning_rate * temporal_difference)
             self.q_values[old_row_index, old_column_index, action_index] = new_q_value
-        if log:
-            print("training completed")
-
-
-# aa = Ai()
-# lst = [8, 6]
-# aa.set_rewards(lst[0], lst[1])
-# aa.training()
-# print(aa.get_shortest_path(0, 0)[1][1])
-
-

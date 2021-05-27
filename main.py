@@ -14,7 +14,7 @@ class Game:
     WIDTH = 250
     HEIGHT = 500
 
-    def start(self):
+    def __init__(self):
         # level and score variables
         self.level_int = 1
         self.score_int = 0
@@ -24,24 +24,29 @@ class Game:
         self.score_to_level_up = [5000, 15000, 36000, 57000, 78000, 99000, 200000, 500000]
 
         # variables to position of next cars
-        self.last_point = 50
-        self.next_point = 50
+        self.next_point = choice((50, 125))
+        self.last_point = self.next_point
 
         # speeds lists
         self.cars_speed = [550, 450, 300, 250, 150, 125, 100, 75, 50]
         self.bars_speed = [750, 650, 500, 450, 350, 250, 200, 100, 75]
 
-        self.running = True
-        self.ai_is_activated = False
-
         # all the possible actions
         self.action_dict = {0: "Left", 1: 'Right'}
 
-        # block code to create root
+        # list with all cars and all bars
+        self.cars = []
+        self.bars = []
+
+        # status of running and artificial intelligence
+        self.running = True
+        self.ai_is_activated = False
+
+        # block code to create root reference on tkinter by Tk()
         self.root = Tk()
+        self.root.title("BRICK CAR AI")
         self.root.resizable(False, False)
         self.root.configure(bg=SECOND_COLOR)
-        self.root.title("BRICK CAR AI")
 
         # create status level
         self.level = StringVar()
@@ -76,15 +81,21 @@ class Game:
         # The main car is the car that you control
         self.main_car = Shape(self.canvas, 50, 'car', 25 * 20, True, True)
 
-        # list with all cars and all bars
-        self.cars = []
-        self.bars = []
+    def start(self):
+        # method for start the game
 
+        # key event reference
         self.root.bind("<Key>", self.handle_events)
-        self.fill_bar()
+
+        # create the side bars before game start
+        self.fill_bars()
+
+        # start timer for car and bars
         self.timer_bars()
         self.timer_cars()
 
+        # start the game
+        print("Start")
         self.root.mainloop()
 
     def activate_ai(self):
@@ -103,7 +114,6 @@ class Game:
             distance = self.get_cars_distance()
             new_ai = Ai()
             new_ai.set_rewards(distance[0], distance[1])
-            # print(distance[0], distance[1])
             new_ai.training()
             self.action_taking(self.action_dict[new_ai.get_shortest_path(0, 0)[1][1]])
 
@@ -116,7 +126,6 @@ class Game:
         # code to get the two cars closest to each road
         coordinates = self.main_car.get_coordinates()
         coordinates[0] = coordinates[0] / 3 - 1
-        # coordinates[1] += 1
 
         max_right = -5
         max_left = -5
@@ -182,6 +191,10 @@ class Game:
 
             # code to create new car
             if self.cars_counter == 0:
+
+                # A new shape type car will be created and added to cars list
+                # the parameters are canvas, reference point on canvas to create a car (x), the type of shape,
+                # reference point to y (0=default) and 2 type of collision check
                 self.cars.append(Shape(self.canvas, self.next_point, 'car', 0, False, True))
                 self.next_point = choice((50, 125))
 
@@ -215,17 +228,11 @@ class Game:
                 self.set_score_label()
                 self.set_level()
 
-                # print(f'Level {self.level_int}, '
-                #       f'Score {self.score_int}, '
-                #       f'Score to update level {self.score_to_level_up[0]}, '
-                #       f'Car Speed {self.cars_speed[0]}, '
-                #       f'Side bars Speed {self.bars_speed[0]}')
-
             # call the Ai method
             self.ai_execution()
 
             # increment the score
-            if len(str(self.score_int)) >= self.max_score_size:
+            if len(str(self.score_int)) <= self.max_score_size:
                 self.score_int += 1
                 self.set_score_label()
 
@@ -236,7 +243,7 @@ class Game:
 
             self.root.after(self.cars_speed[0], self.timer_cars)
 
-    def fill_bar(self):
+    def fill_bars(self):
         # fill the bars on the screen
         for side_bar in (0, 225):
             for x in range(1, 5):
@@ -249,19 +256,16 @@ class Game:
 
     def action_taking(self, action):
         # actions to move car
-        temp_side = 0
+
         if self.running:
             result = True
             if action == "Left":
                 result = self.main_car.move(-3, 0)
-                temp_side = 0
             if action == "Right":
                 result = self.main_car.move(3, 0)
-                temp_side = 1
             if not result and self.main_car.crashed:
                 self.running = False
                 self.collision_color()
-            self.main_car_side = temp_side
 
     def collision_color(self):
         # this will change the color of the car when the main car has crashed
@@ -294,11 +298,14 @@ class Shape:
 
         Shape.BOX_SIZE = 25
         for point in Shape.SHAPES[shape_name]:
+
+            # this condition refers to the block (1,3) which is a block camouflaged with the background color.
             if point == (1, 3):
                 FIRST_COLOR = SECOND_COLOR
             else:
                 FIRST_COLOR = aux_color
 
+            # create
             box = canvas.create_rectangle(
                 point[0] * Shape.BOX_SIZE + self.point,
                 point[1] * Shape.BOX_SIZE - (4 * Shape.BOX_SIZE) + y_additional,
@@ -379,7 +386,7 @@ class Shape:
 
             other_items = set(self.canvas.find_all()) - set(self.boxes)
             if overlap & other_items:
-                print(f'crashed')
+                print("Game over")
                 self.crashed = True
                 return False
         return True
