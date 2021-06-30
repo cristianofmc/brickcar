@@ -23,10 +23,11 @@ class Ai:
 
     def set_rewards(self, left: None, right: None):
         # function that set the values for rewards matrix to hold the rewards for each state.
-        self.rewards[0][0] = left
-        self.rewards[0][1] = right
-        self.rewards[1][0] = left
-        self.rewards[1][1] = right
+        multiplier = 1
+        self.rewards[0][0] = left * multiplier
+        self.rewards[0][1] = right * multiplier
+        self.rewards[1][0] = left * multiplier
+        self.rewards[1][1] = right * multiplier
 
     def set_starting_location(self):
         # choose a random point to start the episode
@@ -72,7 +73,7 @@ class Ai:
 
         # run in 1000 episodes
         for episode in range(1000):
-            # get the starting location for this episode
+            # get the starting locaion for this episode
             self.set_starting_location()
 
             # choose which action to take

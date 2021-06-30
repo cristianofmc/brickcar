@@ -5,3 +5,4 @@ def set_dpi_awareness():
         windll.shcore.SetProcessDpiAwareness(1)
     except Exception as e:
         print(e)
+

@@ -2,6 +2,7 @@ from tkinter import Canvas, Button, Label, Tk, StringVar
 from windows import set_dpi_awareness
 from random import choice, randint
 from ai import Ai
+from datetime import datetime
 
 # code for windows appearance
 set_dpi_awareness()
@@ -16,6 +17,9 @@ class Game:
 
     def __init__(self):
         # level and score variables
+        self.start_time = datetime.now()
+        self.end_time = 0
+        self.interval = 0
         self.level_int = 1
         self.score_int = 0
         self.cars_counter = 0
@@ -28,8 +32,8 @@ class Game:
         self.last_point = self.next_point
 
         # speeds lists
-        self.cars_speed = [400, 300, 250, 200, 150, 100, 75, 50, 20]
-        self.bars_speed = [550, 450, 400, 350, 300, 250, 225, 200, 150]
+        self.cars_speed = [350, 250, 200, 150, 100, 75, 50, 40, 25]
+        self.bars_speed = [500, 400, 350, 300, 250, 225, 200, 190, 195]
 
         # all the possible actions
         self.action_dict = {0: "Left", 1: 'Right'}
@@ -145,6 +149,14 @@ class Game:
         # update the score on screen
         self.score.set(f"Score: {self.score_int}")
 
+        # if self.score_int == 999999 and self.end_time == 0:
+        #     self.execution_log()
+
+    def execution_log(self):
+        self.end_time = datetime.now()
+        self.interval = self.end_time - self.start_time
+        print(f'Level: {self.level_int}\nScore: {self.score_int}\nSpeed: {self.cars_speed[0]}\nTime: {self.interval}')
+
     def set_level(self):
         # update the level
         if self.score_int >= self.score_to_level_up[0]:
@@ -215,6 +227,7 @@ class Game:
                     if shape.crashed:
                         self.running = False
                         self.collision_color()
+                        self.execution_log()
                         return False
                     to_delete = self.cars.index(shape)
                     # delete shapes on canvas
