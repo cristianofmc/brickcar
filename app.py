@@ -14,23 +14,26 @@ class App:
         self.main_frame = tk.Frame(root)
         self.main_frame.pack(fill='both', expand=True)
 
+        Game(self.main_frame , on_game_over=self.show_start_modal)
+
         # Mostra a tela inicial via StartModal
         self.show_start_modal()
 
     def show_start_modal(self):
-        self.clear_frame()
-        # Cria o StartModal no main_frame, com callback para start_game
-        self.start_modal = StartModal(self.main_frame, on_start=self.start_game)
+        self.start_modal = StartModal(self.root, on_start=self.start_game)
+
 
     def start_game(self):
         self.clear_frame()
-        game = Game(self.main_frame, on_game_over=self.show_start_modal)
+        game = Game(self.main_frame, self.on_game_over)
         game.start()
 
     def clear_frame(self):
         for widget in self.main_frame.winfo_children():
             widget.destroy()
 
+    def on_game_over(self):
+        self.show_start_modal()
 
 if __name__ == "__main__":
     root = tk.Tk()
