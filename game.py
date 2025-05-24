@@ -238,18 +238,8 @@ class Game:
 
     def game_over(self):
         self.running = False
-        self.canvas.destroy()
-        self.end_game()
-
-    def end_game(self):
-        self.frame.destroy()
-        self.on_game_over()
-
-
-    def clear_window(self):
-        for widget in self.root.winfo_children():
-            widget.destroy()
-
+        self.execution_log()
+        self.on_game_over() 
 
     def collision_color(self):
         self.main_car.change_color(COLLISION_COLOR)
