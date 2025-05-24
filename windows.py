@@ -1,8 +1,12 @@
-def set_dpi_awareness():
-    #  Turn on DPI awareness on Windows
-    try:
-        from ctypes import windll
-        windll.shcore.SetProcessDpiAwareness(1)
-    except Exception as e:
-        print(e)
+import platform
 
+def set_dpi_awareness():
+    if platform.system() == 'Windows':
+        try:
+            from ctypes import windll
+            windll.shcore.SetProcessDpiAwareness(1)
+        except Exception:
+            pass
+    else:
+        # Em Linux/Mac não é necessário ou não existe esse ajuste
+        pass
